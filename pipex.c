@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   pipex.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rchaumei <rchaumei@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rapheww <rapheww@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/24 14:45:39 by rchaumei          #+#    #+#             */
-/*   Updated: 2026/01/27 01:01:03 by rchaumei         ###   ########.fr       */
+/*   Updated: 2026/01/27 02:30:00 by rapheww          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,9 +73,11 @@ int main(int ac, char **av, char **envp)
     char *cmd1_path;
     char **cmd2;
     char *cmd2_path;
-    int pid;
+    int pid1;
+    int pid2;
     int pipefds[2];
     int status;
+    int exit_code;
     
     if (ac == 5)
     {
@@ -90,15 +92,9 @@ int main(int ac, char **av, char **envp)
         if (!cmd1)
             return (0);
         cmd2 = ft_split(av[3], ' ');
-        cmd1_path = get_cmd_path(cmd1[0], path);
-        cmd2_path = get_cmd_path(cmd2[0], path);
-        if (!cmd1_path)
-            return (0);
-        if (!cmd2_path)
-            return (127);
         pipe(pipefds);
-        pid = fork();
-        if (pid == 0)
+        pid1 = fork();
+        if (pid1 == 0)
         {
             if (in == -1)
                 exit(1);
@@ -106,20 +102,44 @@ int main(int ac, char **av, char **envp)
             dup2(pipefds[1], 1);
             close(in);
             close(pipefds[0]);
+            close(pipefds[1]);
             if (!cmd1 || !cmd1[0] || !cmd1[0][0])
                 exit(127);
+            cmd1_path = get_cmd_path(cmd1[0], path);
+            if (!cmd1_path)
+                exit(127);
             execve(cmd1_path, cmd1, envp);
+            exit(0);
         }
-        if (out == -1)
-            return (1);
-        dup2(pipefds[0], 0);
-        dup2(out, 1);
+        pid2 = fork();
+        if (pid2 == 0)
+        { 
+            if (out == -1)
+                exit(1);
+            dup2(pipefds[0], 0);
+            dup2(out, 1);
+            close(pipefds[0]);
+            close(pipefds[1]);
+            close(out);
+            if (!cmd2 || !cmd2[0] || !cmd2[0][0])
+                exit(127);
+            cmd2_path = get_cmd_path(cmd2[0], path);
+            if (!cmd2_path)
+                exit(127);
+            execve(cmd2_path, cmd2, envp);
+            exit(0);
+        }
+        close(pipefds[0]);
         close(pipefds[1]);
-        close(out);
-        if (!cmd2 || !cmd2[0] || !cmd2[0][0])
-            return (127);
-        execve(cmd2_path, cmd2, envp);
-        waitpid(pid, &status, 0);
+        waitpid(pid1, NULL, 0);
+        waitpid(pid2, &status, 0);
+        if (status >= 256)
+            exit_code = status / 256;
+        else if (status == 0)
+            exit_code = 0;
+        else 
+            exit_code = 128 + status;
+        return(exit_code);
     }
     return (0);
 }
