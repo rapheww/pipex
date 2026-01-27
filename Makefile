@@ -1,6 +1,7 @@
 NAME = pipex
 
 SRC = pipex.c \
+	pipex_utils.c \
 	libft/ft_putstr_fd.c \
 	libft/ft_split.c \
 	libft/ft_substr.c \
