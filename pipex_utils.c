@@ -6,7 +6,7 @@
 /*   By: rchaumei <rchaumei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/27 23:33:47 by rchaumei          #+#    #+#             */
-/*   Updated: 2026/01/27 23:39:41 by rchaumei         ###   ########.fr       */
+/*   Updated: 2026/01/28 22:38:51 by rchaumei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,10 @@ int	check_file(char **av)
 {
 	if (access(av[1], F_OK) == -1)
 		perror("\033[31mError");
-	if (access(av[1], F_OK) == 1)
+	if (access(av[1], F_OK) == 0)
 		if (access(av[1], R_OK) == -1)
 			perror("\033[31mError");
-	if (access(av[4], F_OK) == 1)
+	if (access(av[4], F_OK) == 0)
 		if (access(av[4], W_OK) == -1)
 			perror("\033[31mError");
 	return (0);
