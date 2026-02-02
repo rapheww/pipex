@@ -1,0 +1,4 @@
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+rchaumei  592399  0.0  0.0      0     0 pts/1    Z+   23:59   0:00 [date] <defunct>
+rchaumei  592400  0.0  0.0      0     0 pts/1    Z+   23:59   0:00 [env] <defunct>
+rchaumei  592401  0.0  0.0      0     0 pts/1    Z+   23:59   0:00 [ls] <defunct>

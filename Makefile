@@ -1,10 +1,11 @@
 NAME = pipex
 
-SRC = pipex.c \
-	pipex_utils.c \
+SRC = pipex_bonus.c \
 	libft/ft_putstr_fd.c \
 	libft/ft_split.c \
 	libft/ft_substr.c \
+
+GNL = gnl/get_next_line.c \
 
 LIBFT_DIR = libft
 LIBFT_LIB = ${LIBFT_DIR}/libft.a
@@ -19,7 +20,7 @@ ${LIBFT_LIB}:
 	make -C ${LIBFT_DIR}
 
 ${NAME}: ${OBJ}
-	${CC} ${OBJ} ${LIBFT_LIB} -o ${NAME}
+	${CC} ${OBJ} ${GNL} ${LIBFT_LIB} -o ${NAME}
 
 clean:
 	rm -rf ${OBJ}
