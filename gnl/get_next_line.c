@@ -6,7 +6,7 @@
 /*   By: rchaumei <rchaumei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/17 12:07:23 by rchaumei          #+#    #+#             */
-/*   Updated: 2026/02/01 17:10:59 by rchaumei         ###   ########.fr       */
+/*   Updated: 2026/02/03 23:32:51 by rchaumei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,7 +96,7 @@ char	*get_next_line(int fd)
 	read_bytes = 1;
 	line = NULL;
 	if (fd < 0 || BUFFER_SIZE <= 0)
-		return (NULL);
+		return (free(tmp), NULL);
 	while (read_bytes != 0)
 	{
 		if (tmp && ft_strchr(tmp, '\n') != NULL)
