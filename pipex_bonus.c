@@ -6,15 +6,15 @@
 /*   By: rchaumei <rchaumei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/28 20:55:20 by rchaumei          #+#    #+#             */
-/*   Updated: 2026/02/04 00:11:08 by rchaumei         ###   ########.fr       */
+/*   Updated: 2026/02/05 00:20:56 by rchaumei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex_bonus.h"
 
-int check_infile(char *file)
+int	check_infile(char *file)
 {
-    if (access(file, F_OK) == -1)
+	if (access(file, F_OK) == -1)
 		perror("\033[31mError");
 	if (access(file, F_OK) == 0)
 		if (access(file, R_OK) == -1)
@@ -22,20 +22,20 @@ int check_infile(char *file)
 	return (open(file, O_RDONLY));
 }
 
-int check_outfile(char *file, int i)
+int	check_outfile(char *file, int i)
 {
-    if (access(file, F_OK) == 0)
+	if (access(file, F_OK) == 0)
 		if (access(file, W_OK) == -1)
 			perror("\033[31mError");
 	if (i == 1)
-		return(open(file, O_WRONLY | O_APPEND | O_CREAT, 0777));
-    return (open(file, O_WRONLY | O_TRUNC | O_CREAT, 0777));
+		return (open(file, O_WRONLY | O_APPEND | O_CREAT, 0777));
+	return (open(file, O_WRONLY | O_TRUNC | O_CREAT, 0777));
 }
 
 char	**get_env(char **env)
 {
 	char	**path;
-	
+
 	if (!env)
 		return (NULL);
 	while (*env)
@@ -51,40 +51,27 @@ char	**get_env(char **env)
 	return (path);
 }
 
-void free_path(char **path)
+void	free_path(char **path)
 {
-	int i;
+	int	i;
 
 	i = -1;
-	if(!path)
+	if (!path)
 		return ;
-	while(path[++i])
+	while (path[++i])
 		free(path[i]);
 	free(path);
 }
 
-char	*get_cmd_path(char **cmd, char **path, int *pid)
+char	*get_cmd_path(char **cmd, char **path)
 {
 	char	*command;
 	char	*tmp;
 	int		i;
 
 	i = 0;
-	if (access(cmd[0], F_OK) == 0 && access(cmd[0], X_OK) == -1)
-	{
-		perror("\033[31mError");
-		free_path(cmd);
-		free_path(path);
-		free(pid);
-		exit(126);
-	}
 	if (access(cmd[0], X_OK) == 0)
 		return (cmd[0]);
-	if(!path || !path[0] || !path[0][0])
-	{
-		perror("\033[31mError");
-		exit(127);
-	}
 	while (path[i])
 	{
 		command = ft_strjoin(path[i], "/");
@@ -99,44 +86,61 @@ char	*get_cmd_path(char **cmd, char **path, int *pid)
 		free(tmp);
 		i++;
 	}
-	return (perror("\033[31mError"), NULL);
+	return (NULL);
 }
 
-void here_doc(char *lim, int *fds, int *pid)
+void	here_doc(char *lim, t_command *s)
 {
-	char *line;
-	
-	close(fds[0]);
+	char	*line;
+
+	close(s->fds[0]);
 	ft_putstr_fd("pipe heredoc >", 1);
 	line = get_next_line(0);
-	while(line)
+	while (line)
 	{
 		if (ft_strncmp(line, lim, ft_strlen(lim)) == 0
-    		&& line[ft_strlen(lim)] == '\n')
+			&& line[ft_strlen(lim)] == '\n')
 		{
 			get_next_line(-1);
-			close(fds[1]);
+			close(s->fds[1]);
 			free(line);
-			free(pid);
+			free(s->pid);
 			exit(0);
 		}
-		write(fds[1], line, ft_strlen(line));
+		write(s->fds[1], line, ft_strlen(line));
 		free(line);
 		ft_putstr_fd("pipe heredoc >", 1);
 		line = get_next_line(0);
 	}
-	
 }
 
-void child(char **envp, char **av, int i,char **path, int fd_in, int fd_out, int *pid)
+int	is_slash(char *s)
 {
-	char **cmd;
-	char *cmd_path;
-	
+	int	i;
+
+	i = 0;
+	while (s[i])
+	{
+		if (s[i] == '/')
+			return (1);
+		i++;
+	}
+	return (0);
+}
+
+void	child(char **envp, char **av, int i, char **path, int fd_in, int fd_out,
+		int *pid, int *fds, int in, int out)
+{
+	char	**cmd;
+	char	*cmd_path;
+
 	if (fd_in < 0)
 	{
 		free_path(path);
 		free(pid);
+		close(fds[0]);
+		if (fd_out >= 0)
+			close(fd_out);
 		perror("\033[31mError");
 		exit(1);
 	}
@@ -146,20 +150,67 @@ void child(char **envp, char **av, int i,char **path, int fd_in, int fd_out, int
 		cmd = ft_split(av[i + 3], ' ');
 	if (!cmd || !cmd[0] || !cmd[0][0])
 	{
+		ft_putstr_fd("Command not found: ", 2);
+		if (cmd && cmd[0])
+			ft_putstr_fd(cmd[0], 2);
+		ft_putstr_fd("\n", 2);
 		free_path(cmd);
 		free_path(path);
 		free(pid);
-		ft_putstr_fd("Command not found \n", 2);	
-		exit(127);
+		close(fd_in);
+		close(fd_out);
+		close(fds[0]);
+		exit(0);
 	}
-	cmd_path = get_cmd_path(cmd, path, pid);
-	if (!cmd_path)
-	{	
+	if (is_slash(cmd[0]) && access(cmd[0], F_OK) == -1)
+	{
+		perror("\033[31mError");
 		free_path(cmd);
 		free_path(path);
 		free(pid);
-		ft_putstr_fd("Command not found \n", 2);
-		exit(127);
+		close(fds[0]);
+		close(fds[1]);
+		close(in);
+		close(out);
+		exit(0);
+	}
+	if (access(cmd[0], F_OK) == 0 && access(cmd[0], X_OK) == -1)
+	{
+		perror("\033[31mError");
+		free_path(cmd);
+		free_path(path);
+		free(pid);
+		close(fds[0]);
+		close(fds[1]);
+		close(in);
+		close(out);
+		exit(0);
+	}
+	if ((!path || !path[0] || !path[0][0]) && access(cmd[0], X_OK) == -1)
+	{
+		perror("\033[31mError");
+		free_path(cmd);
+		free_path(path);
+		free(pid);
+		close(fds[0]);
+		close(fds[1]);
+		close(in);
+		close(out);
+		exit(0);
+	}
+	cmd_path = get_cmd_path(cmd, path);
+	if (!cmd_path)
+	{
+		ft_putstr_fd("Command not found: ", 2);
+		ft_putstr_fd(cmd[0], 2);
+		ft_putstr_fd("\n", 2);
+		free_path(cmd);
+		free_path(path);
+		free(pid);
+		close(fd_in);
+		close(fd_out);
+		close(fds[0]);
+		exit(0);
 	}
 	dup2(fd_out, 1);
 	dup2(fd_in, 0);
@@ -170,131 +221,184 @@ void child(char **envp, char **av, int i,char **path, int fd_in, int fd_out, int
 	free_path(cmd);
 }
 
-int main(int ac, char **av, char **envp)
+int	main(int ac, char **av, char **envp)
 {
-    int in;
-    int out;
-    char **path;
-	int i;
-	int status;
-	int *pid;
-	char **cmd;
-	int fds[2];
-	int fd_in;
-	int num_ac;
-	int num_cmd;
-	char *cmd_path;
-	int last_pid;
-	int wpid;
-	int exit_code;
-	
-    if (ac >= 5)
-    {
+	t_command	s;
+	int			i;
+
+	if (ac >= 5)
+	{
 		i = 0;
-		pid = malloc(sizeof(int) * (ac - 3));
-		
+		s.exit_code = 0;
+		s.pid = malloc(sizeof(int) * (ac - 3));
+		if (!s.pid)
+			return (0);
 		if (ft_strncmp(av[1], "here_doc", 8) == 0)
 		{
 			if (ac < 6)
 			{
+				free(s.pid);
 				perror("\033[31mError");
 				exit(1);
 			}
-			out = check_outfile(av[ac - 1], 1);
-			pipe(fds);
-			fd_in = fds[0];
-			num_ac = ac - 4;
-			num_cmd = ac - 4;
-			pid[i] = fork();
-			if (!pid[i])
+			s.out = check_outfile(av[ac - 1], 1);
+			pipe(s.fds);
+			s.fd_in = s.fds[0];
+			s.num_ac = ac - 4;
+			s.num_cmd = ac - 4;
+			s.pid[i] = fork();
+			if (!s.pid[i])
 			{
-				here_doc(av[2], fds, pid);
-				free(pid);
+				if (s.out >= 0)
+					close(s.out);
+				here_doc(av[2], &s);
+				close(s.fd_in);
+				close(s.fds[1]);
 			}
-			close(fds[1]);
-			waitpid(pid[i], NULL, 0);
+			close(s.fds[1]);
+			waitpid(s.pid[i], NULL, 0);
 			i++;
 		}
 		else
 		{
-			out = check_outfile(av[ac - 1], 0);
-			num_ac = ac - 3;
-			num_cmd = ac - 4;
-        	in = check_infile(av[1]);
-			fd_in = in;
+			s.out = check_outfile(av[ac - 1], 0);
+			s.num_ac = ac - 3;
+			s.num_cmd = ac - 4;
+			s.in = check_infile(av[1]);
+			s.fd_in = s.in;
 		}
-        path = get_env(envp);
-		while (i  < num_cmd)
+		s.path = get_env(envp);
+		while (i < s.num_cmd)
 		{
-			pipe(fds);
-			pid[i] = fork();
-			if (!pid[i])
+			pipe(s.fds);
+			s.pid[i] = fork();
+			if (!s.pid[i])
 			{
-				close(fds[0]);
-				child(envp, av, i, path, fd_in, fds[1], pid);
-				free(pid);
+				close(s.fds[0]);
+				if (s.out >= 0)
+					close(s.out);
+				child(envp, av, i, s.path, s.fd_in, s.fds[1], s.pid, s.fds,
+					s.in, s.out);
+				close(s.fd_in);
+				close(s.fds[1]);
+				free(s.pid);
 			}
-			close(fd_in);
-			close(fds[1]);
-			fd_in = dup(fds[0]);
-			close(fds[0]);
+			if (s.fd_in >= 0)
+				close(s.fd_in);
+			close(s.fds[1]);
+			s.fd_in = s.fds[0];
 			i++;
-				
 		}
-		pid[i] = fork();
-		last_pid = pid[i];
-		if (pid[i] == 0)
+		s.pid[i] = fork();
+		s.last_pid = s.pid[i];
+		if (s.pid[i] == 0)
 		{
-			if (out == -1)
-			{	
-				free_path(path);
-				free(pid);
+			if (s.out == -1)
+			{
+				free_path(s.path);
+				free(s.pid);
+				close(s.fds[0]);
+				close(s.fds[1]);
+				close(s.in);
 				perror("\033[31mError");
 				exit(1);
 			}
-			dup2(fd_in, 0);
-			dup2(out, 1);
-			close(fd_in);
-			close(out);
-			cmd = ft_split(av[ac - 2], ' ');
-			if (!cmd || !cmd[0] || !cmd[0][0])
+			dup2(s.fd_in, 0);
+			dup2(s.out, 1);
+			close(s.fd_in);
+			if (s.out >= 0)
+				close(s.out);
+			s.cmd = ft_split(av[ac - 2], ' ');
+			if (!s.cmd || !s.cmd[0] || !s.cmd[0][0])
 			{
-				free_path(cmd);
-				free_path(path);
-				free(pid);
-				ft_putstr_fd("Command not found \n", 2);
+				ft_putstr_fd("Command not found: ", 2);
+				if (s.cmd && s.cmd[0])
+					ft_putstr_fd(s.cmd[0], 2);
+				ft_putstr_fd("\n", 2);
+				free_path(s.cmd);
+				free_path(s.path);
+				free(s.pid);
+				close(s.fds[0]);
+				close(s.fds[1]);
+				close(s.in);
+				close(s.out);
 				exit(127);
 			}
-			cmd_path = get_cmd_path(cmd, path, pid);
-			if (!cmd_path)
+			if (is_slash(s.cmd[0]) && access(s.cmd[0], F_OK) == -1)
 			{
-				free_path(cmd);
-				free_path(path);
-				free(pid);
-				ft_putstr_fd("Command not found \n", 2);
-				exit(127);
-			}
-			if (execve(cmd_path, cmd, envp) == -1)
 				perror("\033[31mError");
-			free_path(path);
-			free_path(cmd);
-			free(cmd_path);
+				free_path(s.cmd);
+				free_path(s.path);
+				free(s.pid);
+				close(s.fds[0]);
+				close(s.fds[1]);
+				close(s.in);
+				close(s.out);
+				exit(127);
+			}
+			if (access(s.cmd[0], F_OK) == 0 && access(s.cmd[0], X_OK) == -1)
+			{
+				perror("\033[31mError");
+				free_path(s.cmd);
+				free_path(s.path);
+				free(s.pid);
+				close(s.fds[0]);
+				close(s.fds[1]);
+				close(s.in);
+				close(s.out);
+				exit(126);
+			}
+			if ((!s.path || !s.path[0] || !s.path[0][0]) && access(s.cmd[0],
+					X_OK) == -1)
+			{
+				perror("\033[31mError");
+				free_path(s.cmd);
+				free_path(s.path);
+				free(s.pid);
+				close(s.fds[0]);
+				close(s.fds[1]);
+				close(s.in);
+				close(s.out);
+				exit(127);
+			}
+			s.cmd_path = get_cmd_path(s.cmd, s.path);
+			if (!s.cmd_path)
+			{
+				ft_putstr_fd("Command not found: ", 2);
+				ft_putstr_fd(s.cmd[0], 2);
+				ft_putstr_fd("\n", 2);
+				free_path(s.cmd);
+				free_path(s.path);
+				free(s.pid);
+				close(s.fds[0]);
+				close(s.fds[1]);
+				close(s.in);
+				close(s.out);
+				exit(127);
+			}
+			if (execve(s.cmd_path, s.cmd, envp) == -1)
+				perror("\033[31mError");
+			free_path(s.path);
+			free_path(s.cmd);
+			free(s.cmd_path);
 		}
-		close(fd_in);
-		close(out);
-		free(pid);
-		free_path(path);
+		if (s.fd_in >= 0)
+			close(s.fd_in);
+		if (s.out >= 0)
+			close(s.out);
+		free(s.pid);
+		free_path(s.path);
 		i = 0;
-		while(i < num_ac)
+		while (i < s.num_ac)
 		{
-			wpid = wait(&status);
-			if (wpid == last_pid)
-				exit_code = status;
+			s.wpid = wait(&s.status);
+			if (s.wpid == s.last_pid)
+				s.exit_code = s.status;
 			i++;
 		}
-		if (exit_code >= 256)
-			return (exit_code / 256);
+		if (s.exit_code >= 256)
+			return (s.exit_code / 256);
 		return (0);
-    }
-    return (0);
+	}
+	return (0);
 }

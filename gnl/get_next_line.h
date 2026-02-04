@@ -6,7 +6,7 @@
 /*   By: rchaumei <rchaumei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/17 12:15:21 by rchaumei          #+#    #+#             */
-/*   Updated: 2026/02/01 17:11:14 by rchaumei         ###   ########.fr       */
+/*   Updated: 2026/02/05 00:04:10 by rchaumei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 # include <stdlib.h>
 # include <unistd.h>
 # include "../libft/libft.h"
-
 
 # ifndef BUFFER_SIZE
 #  define BUFFER_SIZE 5
