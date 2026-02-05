@@ -1,6 +1,10 @@
 NAME = pipex
 
-SRC = pipex_bonus.c \
+SRC = pipex.c \
+	child.c \
+	close.c \
+	heredoc.c \
+	init.c \
 	libft/ft_putstr_fd.c \
 	libft/ft_split.c \
 	libft/ft_substr.c \
